@@ -2,6 +2,8 @@ import randomstring from 'randomstring';
 import { LoadableTournamentValues } from '../interfaces/LoadableTournamentValues.js';
 import { Match } from './Match.js';
 import { Tournament } from './Tournament.js';
+import { League } from './League.js';
+import { Team } from './Team.js';
 import { SettableTournamentValues } from '../interfaces/SettableTournamentValues.js';
 
 /** 
@@ -10,10 +12,12 @@ import { SettableTournamentValues } from '../interfaces/SettableTournamentValues
 export class Manager {
     /** Array of all tournaments being managed. */
     tournaments: Array<Tournament>;
+    leagues: Array<League>;
 
     /** Create a tournament manager. */
     constructor() {
         this.tournaments = [];
+        this.leagues = [];
     }
 
     /**
@@ -104,5 +108,15 @@ export class Manager {
         tournament.end();
         this.tournaments.splice(this.tournaments.findIndex(t => t.id === tournament.id), 1);
         return tournament;
+    }
+
+    createLeague(name: string): League {
+        const league = new League(name);
+        this.leagues.push(league);
+        return league;
+    }
+
+    createTeam(name: string): Team {
+        return new Team(name);
     }
 }

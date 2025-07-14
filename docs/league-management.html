@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>League Management</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <h1>League Management</h1>
+
+    <script type="module">
+        import TournamentOrganizer from '../dist/index.module.js';
+
+        const manager = new TournamentOrganizer();
+
+        // Create a new league
+        const league = manager.createLeague('My League');
+        console.log('League created:', league);
+
+        // Create some teams
+        const team1 = manager.createTeam('Team 1');
+        const team2 = manager.createTeam('Team 2');
+        const team3 = manager.createTeam('Team 3');
+        console.log('Teams created:', team1, team2, team3);
+
+        // Add the teams to the league
+        league.addTeam(team1);
+        league.addTeam(team2);
+        league.addTeam(team3);
+        console.log('Teams added to league:', league.teams);
+
+        // Create a schedule for the league
+        league.createSchedule();
+        console.log('League schedule created:', league.schedule);
+    </script>
+</body>
+</html>
