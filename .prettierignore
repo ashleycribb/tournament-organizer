@@ -1,0 +1,9 @@
+.gitignore
+package.json
+package-lock.json
+tsconfig.json
+rollup.es.config.ts
+rollup.umd.config.ts
+typedoc.json
+dist
+docs

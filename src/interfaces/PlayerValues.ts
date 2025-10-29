@@ -67,6 +67,6 @@ export interface PlayerValues {
      * Initialized as `{}`
      */
     meta: {
-        [key: string]: any
+        [key: string]: unknown
     }
 }

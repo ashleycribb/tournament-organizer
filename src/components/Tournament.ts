@@ -1,5 +1,6 @@
 import randomstring from 'randomstring';
 import * as Pairings from 'tournament-pairings';
+import merge from 'lodash.merge';
 import { Match } from './Match.js';
 import { Player } from './Player.js';
 import { StandingsValues } from '../interfaces/StandingsValues.js';
@@ -90,22 +91,15 @@ export class Tournament {
 
     /** Set tournament options (only changes in options need to be included in the object) */
     set settings(options: SettableTournamentValues) {
-        if (options.hasOwnProperty('players')) {
-            options.players = [...this.players, ...options.players];
+        if (options.players) {
+            this.players.push(...options.players);
+            delete options.players;
         }
-        if (options.hasOwnProperty('matches')) {
-            options.matches = [...this.matches, ...options.matches];
+        if (options.matches) {
+            this.matches.push(...options.matches);
+            delete options.matches;
         }
-        if (options.hasOwnProperty('scoring')) {
-            options.scoring = Object.assign(this.scoring, options.scoring);
-        }
-        if (options.hasOwnProperty('stageOne')) {
-            options.stageOne = Object.assign(this.stageOne, options.stageOne);
-        }
-        if (options.hasOwnProperty('stageTwo')) {
-            options.stageTwo = Object.assign(this.stageTwo, options.stageTwo);
-        }
-        Object.assign(this, options);
+        merge(this, options);
     }
 
     #createMatches(players: Array<Player>) {

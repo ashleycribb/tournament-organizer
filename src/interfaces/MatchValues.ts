@@ -115,6 +115,6 @@ export interface MatchValues {
      * Initialized as `{}`
      */
     meta: {
-        [key: string]: any
+        [key: string]: unknown
     }
 }

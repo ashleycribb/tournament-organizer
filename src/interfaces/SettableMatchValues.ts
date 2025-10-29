@@ -1,6 +1,3 @@
-import { Match } from "../components/Match.js";
-import { MatchValues } from "./MatchValues.js";
-
 /**
  * All properties that can be set with {@link Match.values}.
  * 
@@ -28,6 +25,6 @@ export interface SettableMatchValues {
         loss?: string | null
     },
     meta?: {
-        [key: string]: any
+        [key: string]: unknown
     }
 }

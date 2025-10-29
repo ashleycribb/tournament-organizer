@@ -1,7 +1,5 @@
 import { Player } from '../components/Player.js';
 import { Match } from '../components/Match.js';
-import { Tournament } from '../components/Tournament.js';
-import { TournamentValues } from './TournamentValues.js';
 
 /**
  * All properties that can be set with {@link Tournament.settings}.
@@ -50,6 +48,6 @@ export interface SettableTournamentValues {
         }
     },
     meta?: {
-        [key: string]: any
+        [key: string]: unknown
     }
 }

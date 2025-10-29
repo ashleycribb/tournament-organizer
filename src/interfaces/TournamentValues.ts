@@ -183,6 +183,6 @@ export interface TournamentValues {
      * Initialized as `{}`
      */
     meta: {
-        [key: string]: any
+        [key: string]: unknown
     }
 }

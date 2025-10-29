@@ -1,6 +1,3 @@
-import { Player } from "../components/Player.js";
-import { PlayerValues } from "./PlayerValues.js";
-
 /**
  * All properties that can be set with {@link Player.values}.
  * 
@@ -21,6 +18,6 @@ export interface SettablePlayerValues {
         draw: number
     }>,
     meta?: {
-        [key: string]: any
+        [key:string]: unknown
     }
 }

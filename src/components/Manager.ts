@@ -59,7 +59,8 @@ export class Manager {
             scoring: tourney.scoring,
             stageOne: tourney.stageOne,
             stageTwo: tourney.stageTwo,
-            meta: tourney.meta
+            meta: tourney.meta,
+            status: tourney.status
         };
         tourney.players.forEach(player => {
             const newPlayer = tournament.createPlayer(player.name, player.id);
@@ -82,9 +83,6 @@ export class Manager {
             }
             tournament.matches.push(newMatch);
         });
-        tournament.settings = {
-            status: tourney.status
-        };
         this.tournaments.push(tournament);
         return tournament;
     }
