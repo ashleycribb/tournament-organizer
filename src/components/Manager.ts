@@ -90,6 +90,21 @@ export class Manager {
     }
 
     /**
+     * Get a tournament from the manager.
+     *
+     * Throws an error if no tournament has the specified ID.
+     * @param id ID of the tournament to be retrieved
+     * @returns The tournament
+     */
+    getTournament(id: string): Tournament {
+        const tournament = this.tournaments.find(t => t.id === id);
+        if (tournament === undefined) {
+            throw new Error(`No tournament with ID ${id} exists`);
+        }
+        return tournament;
+    }
+
+    /**
      * Remove a tournament from the manager.
      * 
      * Throws an error if no tournament has the specified ID.
