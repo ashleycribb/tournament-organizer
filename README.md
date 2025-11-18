@@ -50,6 +50,53 @@ import TournamentOrganizer from "https://esm.sh/tournament-organizer/dist/index.
 ## Documentation
 Available online: [https://slashinfty.github.io/tournament-organizer/](https://slashinfty.github.io/tournament-organizer/)
 
+## Usage
+
+Here is a complete example of how to create a tournament, add players, and enter results.
+
+```typescript
+import TournamentOrganizer from 'tournament-organizer';
+
+// Create a new tournament manager
+const manager = new TournamentOrganizer();
+
+// Create a new tournament
+const tournament = manager.createTournament('My Tournament', {
+    stageOne: {
+        format: 'swiss',
+        rounds: 3,
+    },
+});
+
+// Add players
+const player1 = tournament.createPlayer('Player 1');
+const player2 = tournament.createPlayer('Player 2');
+const player3 = tournament.createPlayer('Player 3');
+const player4 = tournament.createPlayer('Player 4');
+
+// Start the tournament
+tournament.start();
+
+// Get the active matches for the first round
+const round1Matches = tournament.matches.filter(m => m.round === 1 && m.active);
+
+// Enter the results for the first round
+tournament.enterResult(round1Matches[0].id, 2, 0);
+tournament.enterResult(round1Matches[1].id, 1, 1, 1);
+
+// Advance to the next round
+tournament.next();
+
+// Get the active matches for the second round
+const round2Matches = tournament.matches.filter(m => m.round === 2 && m.active);
+
+// ... and so on
+
+// Get the final standings
+const standings = tournament.standings();
+console.log(standings);
+```
+
 ## Discussion
 
 You can discuss this repository more in my [Discord](https://discord.gg/Q8t9gcZ77s).

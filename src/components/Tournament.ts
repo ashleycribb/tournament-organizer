@@ -1,5 +1,6 @@
 import randomstring from 'randomstring';
 import * as Pairings from 'tournament-pairings';
+import merge from 'lodash.merge';
 import { Match } from './Match.js';
 import { Player } from './Player.js';
 import { StandingsValues } from '../interfaces/StandingsValues.js';
@@ -90,22 +91,15 @@ export class Tournament {
 
     /** Set tournament options (only changes in options need to be included in the object) */
     set settings(options: SettableTournamentValues) {
-        if (options.hasOwnProperty('players')) {
-            options.players = [...this.players, ...options.players];
+        if (options.players) {
+            this.players.push(...options.players);
+            delete options.players;
         }
-        if (options.hasOwnProperty('matches')) {
-            options.matches = [...this.matches, ...options.matches];
+        if (options.matches) {
+            this.matches.push(...options.matches);
+            delete options.matches;
         }
-        if (options.hasOwnProperty('scoring')) {
-            options.scoring = Object.assign(this.scoring, options.scoring);
-        }
-        if (options.hasOwnProperty('stageOne')) {
-            options.stageOne = Object.assign(this.stageOne, options.stageOne);
-        }
-        if (options.hasOwnProperty('stageTwo')) {
-            options.stageTwo = Object.assign(this.stageTwo, options.stageTwo);
-        }
-        Object.assign(this, options);
+        merge(this, options);
     }
 
     #createMatches(players: Array<Player>) {
@@ -439,44 +433,101 @@ export class Tournament {
         }
         player.active = false;
         if ((this.status === 'stage-one' && ['single-elimination', 'double-elimination', 'stepladder'].includes(this.stageOne.format) || this.status === 'stage-two' && ['single-elimination', 'double-elimination', 'stepladder'].includes(this.stageTwo.format))) {
-            const activeMatch = this.matches.find(match => match.active === true && (match.player1.id === player.id || match.player2.id === player.id));
-            if (activeMatch !== undefined) {
-                const opponent = this.players.find(p => p.id === (activeMatch.player1.id === player.id ? activeMatch.player2.id : activeMatch.player1.id));
-                activeMatch.values = {
-                    active: false,
-                    player1: activeMatch.player1.id === player.id ? {
-                        win: 0,
-                        loss: Math.ceil(this.scoring.bestOf / 2)
-                    } : {
-                        win: Math.ceil(this.scoring.bestOf / 2),
-                        loss: 0
+            this.#handleEliminationRemove(player);
+        } else if (['round-robin', 'double-round-robin'].includes(this.stageOne.format)) {
+            const byeMatches = this.matches.filter(match => match.round > this.round && (match.player1.id === player.id || match.player2.id === player.id));
+            byeMatches.forEach(match => {
+                match.values = {
+                    player1: {
+                        id: match.player1.id === player.id ? null : match.player1.id
                     },
-                    player2: activeMatch.player1.id === player.id ? {
-                        win: Math.ceil(this.scoring.bestOf / 2),
-                        loss: 0
-                    } : {
-                        win: 0,
-                        loss: Math.ceil(this.scoring.bestOf / 2)
+                    player2: {
+                        id: match.player2.id === player.id ? null : match.player2.id
                     }
-                };
-                player.updateMatch(activeMatch.id, {
+                }
+            });
+        }
+    }
+
+    #handleEliminationRemove(player: Player): void {
+        const activeMatch = this.matches.find(match => match.active === true && (match.player1.id === player.id || match.player2.id === player.id));
+        if (activeMatch !== undefined) {
+            const opponent = this.players.find(p => p.id === (activeMatch.player1.id === player.id ? activeMatch.player2.id : activeMatch.player1.id));
+            activeMatch.values = {
+                active: false,
+                player1: activeMatch.player1.id === player.id ? {
+                    win: 0,
                     loss: Math.ceil(this.scoring.bestOf / 2)
-                });
-                opponent.updateMatch(activeMatch.id, {
-                    win: Math.ceil(this.scoring.bestOf / 2)
-                });
-                if (activeMatch.path.win !== null) {
-                    const winMatch = this.matches.find(match => match.id === activeMatch.path.win);
+                } : {
+                    win: Math.ceil(this.scoring.bestOf / 2),
+                    loss: 0
+                },
+                player2: activeMatch.player1.id === player.id ? {
+                    win: Math.ceil(this.scoring.bestOf / 2),
+                    loss: 0
+                } : {
+                    win: 0,
+                    loss: Math.ceil(this.scoring.bestOf / 2)
+                }
+            };
+            player.updateMatch(activeMatch.id, {
+                loss: Math.ceil(this.scoring.bestOf / 2)
+            });
+            opponent.updateMatch(activeMatch.id, {
+                win: Math.ceil(this.scoring.bestOf / 2)
+            });
+            if (activeMatch.path.win !== null) {
+                const winMatch = this.matches.find(match => match.id === activeMatch.path.win);
+                if (winMatch.player1.id === null) {
+                    winMatch.values = {
+                        player1: {
+                            id: opponent.id
+                        }
+                    };
+                } else {
+                    winMatch.values = {
+                        player2: {
+                            id: opponent.id
+                        }
+                    }
+                }
+                if (winMatch.player1.id !== null && winMatch.player2.id !== null) {
+                    winMatch.values = {
+                        active: true
+                    };
+                    this.players.find(p => p.id === winMatch.player1.id).addMatch({
+                        id: winMatch.id,
+                        opponent: winMatch.player2.id
+                    });
+                    this.players.find(p => p.id === winMatch.player2.id).addMatch({
+                        id: winMatch.id,
+                        opponent: winMatch.player1.id
+                    });
+                }
+            }
+            if (activeMatch.path.loss !== null) {
+                const lossMatch = this.matches.find(match => match.id === activeMatch.path.loss);
+                if (lossMatch.player1.id === null && lossMatch.player2.id === null) {
+                    const prevMatch = this.matches.find(match => (match.path.win === lossMatch.id || match.path.loss === lossMatch.id) && match.player1.id !== player.id && match.player2.id !== player.id);
+                    prevMatch.values = {
+                        path: {
+                            win: prevMatch.path.win === lossMatch.id ? lossMatch.path.win : prevMatch.path.win,
+                            loss: prevMatch.path.loss === lossMatch.id ? lossMatch.path.win : prevMatch.path.loss
+                        }
+                    };
+                } else {
+                    const waitingPlayer = this.players.find(player => player.id === (lossMatch.player1.id === null ? lossMatch.player2.id : lossMatch.player1.id));
+                    const winMatch = this.matches.find(match => match.id === lossMatch.path.win);
                     if (winMatch.player1.id === null) {
                         winMatch.values = {
                             player1: {
-                                id: opponent.id
+                                id: waitingPlayer.id
                             }
                         };
                     } else {
                         winMatch.values = {
                             player2: {
-                                id: opponent.id
+                                id: waitingPlayer.id
                             }
                         }
                     }
@@ -494,80 +545,27 @@ export class Tournament {
                         });
                     }
                 }
-                if (activeMatch.path.loss !== null) {
-                    const lossMatch = this.matches.find(match => match.id === activeMatch.path.loss);
-                    if (lossMatch.player1.id === null && lossMatch.player2.id === null) {
-                        const prevMatch = this.matches.find(match => (match.path.win === lossMatch.id || match.path.loss === lossMatch.id) && match.player1.id !== player.id && match.player2.id !== player.id);
-                        prevMatch.values = {
-                            path: {
-                                win: prevMatch.path.win === lossMatch.id ? lossMatch.path.win : prevMatch.path.win,
-                                loss: prevMatch.path.loss === lossMatch.id ? lossMatch.path.win : prevMatch.path.loss
-                            }
-                        };
-                    } else {
-                        const waitingPlayer = this.players.find(player => player.id === (lossMatch.player1.id === null ? lossMatch.player2.id : lossMatch.player1.id));
-                        const winMatch = this.matches.find(match => match.id === lossMatch.path.win);
-                        if (winMatch.player1.id === null) {
-                            winMatch.values = {
-                                player1: {
-                                    id: waitingPlayer.id
-                                }
-                            };
-                        } else {
-                            winMatch.values = {
-                                player2: {
-                                    id: waitingPlayer.id
-                                }
-                            }
-                        }
-                        if (winMatch.player1.id !== null && winMatch.player2.id !== null) {
-                            winMatch.values = {
-                                active: true
-                            };
-                            this.players.find(p => p.id === winMatch.player1.id).addMatch({
-                                id: winMatch.id,
-                                opponent: winMatch.player2.id
-                            });
-                            this.players.find(p => p.id === winMatch.player2.id).addMatch({
-                                id: winMatch.id,
-                                opponent: winMatch.player1.id
-                            });
-                        }
-                    }
-                }
             }
-            const waitingMatch = this.matches.find(match => (match.player1.id === player.id && match.player2.id === null) || (match.player2.id === player.id && match.player1.id === null));
-            if (waitingMatch !== undefined && waitingMatch.path.win !== null) {
-                const prevMatch = this.matches.find(match => (match.path.win === waitingMatch.id || match.path.loss === waitingMatch.id) && match.player1.id !== player.id && match.player2.id !== player.id);
-                prevMatch.values = {
+        }
+        const waitingMatch = this.matches.find(match => (match.player1.id === player.id && match.player2.id === null) || (match.player2.id === player.id && match.player1.id === null));
+        if (waitingMatch !== undefined && waitingMatch.path.win !== null) {
+            const prevMatch = this.matches.find(match => (match.path.win === waitingMatch.id || match.path.loss === waitingMatch.id) && match.player1.id !== player.id && match.player2.id !== player.id);
+            prevMatch.values = {
+                path: {
+                    win: prevMatch.path.win === waitingMatch.id ? waitingMatch.path.win : prevMatch.path.win,
+                    loss: prevMatch.path.loss === waitingMatch.id ? waitingMatch.path.win : prevMatch.path.loss
+                }
+            };
+            if (waitingMatch.path.loss !== undefined) {
+                const prevLossMatch = this.matches.find(match => (match.path.win === waitingMatch.path.loss || match.path.loss === waitingMatch.path.loss) && match.player1.id !== player.id && match.player2.id !== player.id);
+                const currLossMatch = this.matches.find(match => match.id === waitingMatch.path.loss);
+                prevLossMatch.values = {
                     path: {
-                        win: prevMatch.path.win === waitingMatch.id ? waitingMatch.path.win : prevMatch.path.win,
-                        loss: prevMatch.path.loss === waitingMatch.id ? waitingMatch.path.win : prevMatch.path.loss
-                    }
-                };
-                if (waitingMatch.path.loss !== undefined) {
-                    const prevLossMatch = this.matches.find(match => (match.path.win === waitingMatch.path.loss || match.path.loss === waitingMatch.path.loss) && match.player1.id !== player.id && match.player2.id !== player.id);
-                    const currLossMatch = this.matches.find(match => match.id === waitingMatch.path.loss);
-                    prevLossMatch.values = {
-                        path: {
-                            win: prevLossMatch.path.win === currLossMatch.id ? currLossMatch.path.win : prevLossMatch.path.win,
-                            loss: prevLossMatch.path.loss === currLossMatch.id ? currLossMatch.path.win : prevLossMatch.path.loss
-                        }
+                        win: prevLossMatch.path.win === currLossMatch.id ? currLossMatch.path.win : prevLossMatch.path.win,
+                        loss: prevLossMatch.path.loss === currLossMatch.id ? currLossMatch.path.win : prevLossMatch.path.loss
                     }
                 }
             }
-        } else if (['round-robin', 'double-round-robin'].includes(this.stageOne.format)) {
-            const byeMatches = this.matches.filter(match => match.round > this.round && (match.player1.id === player.id || match.player2.id === player.id));
-            byeMatches.forEach(match => {
-                match.values = {
-                    player1: {
-                        id: match.player1.id === player.id ? null : match.player1.id
-                    },
-                    player2: {
-                        id: match.player2.id === player.id ? null : match.player2.id
-                    }
-                }
-            });
         }
     }
 
@@ -681,9 +679,18 @@ export class Tournament {
      * @param draws Number of draws
      */
     enterResult(id: string, player1Wins: number, player2Wins: number, draws: number = 0): void {
+        if (player1Wins < 0 || player2Wins < 0 || draws < 0) {
+            throw new Error('Scores cannot be negative');
+        }
+        if (player1Wins + player2Wins + draws > this.scoring.bestOf) {
+            throw new Error('Total games cannot exceed bestOf');
+        }
+        if (player1Wins === player2Wins && player1Wins + player2Wins === this.scoring.bestOf) {
+            throw new Error('Match cannot end in a draw if all games have been played');
+        }
         const match = this.matches.find(m => m.id === id);
         if (match === undefined) {
-            throw `Match with ID ${id} does not exist`;
+            throw new Error(`Match with ID ${id} does not exist`);
         }
         if (player1Wins > Math.round(this.scoring.bestOf / 2) || player2Wins > Math.round(this.scoring.bestOf / 2)) {
             throw `Players can not win more than ${Math.round(this.scoring.bestOf / 2)} games in a match`;

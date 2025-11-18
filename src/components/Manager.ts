@@ -59,7 +59,8 @@ export class Manager {
             scoring: tourney.scoring,
             stageOne: tourney.stageOne,
             stageTwo: tourney.stageTwo,
-            meta: tourney.meta
+            meta: tourney.meta,
+            status: tourney.status
         };
         tourney.players.forEach(player => {
             const newPlayer = tournament.createPlayer(player.name, player.id);
@@ -82,10 +83,22 @@ export class Manager {
             }
             tournament.matches.push(newMatch);
         });
-        tournament.settings = {
-            status: tourney.status
-        };
         this.tournaments.push(tournament);
+        return tournament;
+    }
+
+    /**
+     * Get a tournament from the manager.
+     *
+     * Throws an error if no tournament has the specified ID.
+     * @param id ID of the tournament to be retrieved
+     * @returns The tournament
+     */
+    getTournament(id: string): Tournament {
+        const tournament = this.tournaments.find(t => t.id === id);
+        if (tournament === undefined) {
+            throw new Error(`No tournament with ID ${id} exists`);
+        }
         return tournament;
     }
 
