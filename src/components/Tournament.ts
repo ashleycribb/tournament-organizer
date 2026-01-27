@@ -109,6 +109,7 @@ export class Tournament {
     }
 
     #createMatches(players: Array<Player>) {
+        const existingIDs = new Set(this.matches.map(m => m.id));
         const format = this.status === 'stage-one' ? this.stageOne.format : this.stageTwo.format
         let matches = [];
         switch (format) {
@@ -135,7 +136,8 @@ export class Tournament {
                             length: 12,
                             charset: 'alphanumeric'
                         });
-                    } while (this.matches.some(m => m.id === id) || newMatches.some(m => m.id === id));
+                    } while (existingIDs.has(id));
+                    existingIDs.add(id);
                     const newMatch = new Match(id, match.round, match.match);
                     newMatch.values = {
                         active: match.player1 !== null && match.player2 !== null,
@@ -181,7 +183,8 @@ export class Tournament {
                             length: 12,
                             charset: 'alphanumeric'
                         });
-                    } while (this.matches.some(m => m.id === id));
+                    } while (existingIDs.has(id));
+                    existingIDs.add(id);
                     const newMatch = new Match(id, match.round, match.match);
                     newMatch.values = {
                         active: match.round === this.round && match.player1 !== null && match.player2 !== null,
@@ -230,7 +233,8 @@ export class Tournament {
                                 length: 12,
                                 charset: 'alphanumeric'
                             });
-                        } while (this.matches.some(m => m.id === id));
+                        } while (existingIDs.has(id));
+                        existingIDs.add(id);
                         const newMatch = new Match(id, match.round, match.match);
                         newMatch.values = {
                             active: match.round === this.round,
@@ -263,7 +267,8 @@ export class Tournament {
                                 length: 12,
                                 charset: 'alphanumeric'
                             });
-                        } while (this.matches.some(m => m.id === id));
+                        } while (existingIDs.has(id));
+                        existingIDs.add(id);
                         const newMatch = new Match(id, match.round, match.match);
                         newMatch.values = {
                             active: match.player2 !== null,
