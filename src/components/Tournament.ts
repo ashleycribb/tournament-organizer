@@ -256,6 +256,8 @@ export class Tournament {
                         rating: player.value
                     }));
                     matches = Pairings.Swiss(playerArray, this.round, this.sorting !== 'none', this.seating);
+                    const playerScores = new Map(playerArray.map(p => [p.id, p.score]));
+                    const playerMap = new Map(this.players.map(p => [p.id, p]));
                     matches.forEach(match => {
                         let id: string;
                         do {
@@ -276,22 +278,22 @@ export class Tournament {
                         };
                         this.matches.push(newMatch);
                         if (newMatch.player2.id !== null) {
-                            const player1Points = this.players.find(p => p.id === newMatch.player1.id).matches.reduce((sum, curr) => this.matches.find(m => m.id === curr.id).active === true ? sum : curr.win > curr.loss ? sum + this.scoring.win : curr.loss > curr.win ? sum + this.scoring.loss : sum + this.scoring.draw, 0);
-                            const player2Points = this.players.find(p => p.id === newMatch.player2.id).matches.reduce((sum, curr) => this.matches.find(m => m.id === curr.id).active === true ? sum : curr.win > curr.loss ? sum + this.scoring.win : curr.loss > curr.win ? sum + this.scoring.loss : sum + this.scoring.draw, 0);
-                            this.players.find(p => p.id === match.player1.toString()).addMatch({
+                    const player1Points = playerScores.get(newMatch.player1.id);
+                    const player2Points = playerScores.get(newMatch.player2.id);
+                    playerMap.get(match.player1.toString()).addMatch({
                                 id: id,
                                 opponent: match.player2.toString(),
                                 pairUpDown: player1Points !== player2Points,
                                 seating: this.seating ? 1 : null
                             });
-                            this.players.find(p => p.id === match.player2.toString()).addMatch({
+                    playerMap.get(match.player2.toString()).addMatch({
                                 id: id,
                                 opponent: match.player1.toString(),
                                 pairUpDown: player1Points !== player2Points,
                                 seating: this.seating ? -1 : null
                             });
                         } else {
-                            this.players.find(p => p.id === match.player1.toString()).addMatch({
+                    playerMap.get(match.player1.toString()).addMatch({
                                 id: id,
                                 opponent: null,
                                 bye: true,
