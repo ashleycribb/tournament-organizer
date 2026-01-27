@@ -310,6 +310,7 @@ export class Tournament {
     }
 
     #computeScores(): Array<StandingsValues> {
+        const matchesById = new Map(this.matches.map(m => [m.id, m]));
         const playerScores = this.players.map(player => ({
             player: player,
             gamePoints: 0,
@@ -335,11 +336,14 @@ export class Tournament {
                 continue;
             }
             player.player.matches.sort((a, b) => {
-                const matchA = this.matches.find(m => m.id === a.id);
-                const matchB = this.matches.find(m => m.id === b.id);
+                const matchA = matchesById.get(a.id);
+                const matchB = matchesById.get(b.id);
                 return matchA.round - matchB.round;
             });
-            player.player.matches.filter(match => this.matches.find(m => m.id === match.id && m.active === false)).forEach(match => {
+            player.player.matches.filter(match => {
+                const m = matchesById.get(match.id);
+                return m && m.active === false;
+            }).forEach(match => {
                 player.gamePoints += ((match.bye ? this.scoring.bye : this.scoring.win) * match.win) + (this.scoring.loss * match.loss) + (this.scoring.draw * match.draw);
                 player.games += match.win + match.loss + match.draw;
                 player.matchPoints += match.bye ? this.scoring.bye : match.win > match.loss ? this.scoring.win : match.loss > match.win ? this.scoring.loss : this.scoring.draw;
@@ -368,7 +372,7 @@ export class Tournament {
             }
             player.tiebreaks.sonnebornBerger = opponents.reduce((sum, opp) => {
                 const match = player.player.matches.find(m => m.opponent === opp.player.id);
-                if (this.matches.find(m => m.id === match.id).active === true) {
+                if (matchesById.get(match.id)?.active === true) {
                     return sum;
                 }
                 return match.win > match.loss ? sum + opp.matchPoints : sum + (0.5 * opp.matchPoints);
